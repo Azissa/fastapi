@@ -35,9 +35,10 @@ class StudentService:
         student = self.show_student(student_id)
         self.students.remove(student)
         
-    def multiply(self, student_id: int)  -> None:
-        student = self.show_student(student_id * 2)
+    def getMultiply(self, student_id: int ,multiply: int)  -> None:
+        student = self.show_student(student_id * multiply) 
         return student
+
         
         
 class SchoolService:

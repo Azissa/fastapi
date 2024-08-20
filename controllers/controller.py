@@ -50,6 +50,6 @@ def delete_student(student_id: int):
     student_service.delete_student(student_id)
     return {"detail": "Student deleted"}
 
-@router.get("/students/multiply/{student_id}" ,response_model=StudentResponse)
-def multiply(student_id: int):
-    return student_service.multiply(student_id)
+@router.get("/students/{multiply}/{student_id}" ,response_model=StudentResponse)
+def getMultiply(student_id: int ,multiply:int):
+    return student_service.getMultiply(student_id,multiply)
