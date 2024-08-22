@@ -1,8 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import List
 from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentUpdate, StudentResponse
 from services.service import SchoolService, StudentService
-router = APIRouter()
+from models.models import get_db_connection
+import logging
+from mysql.connector import Error
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+router = APIRouter()  # Pastikan baris ini ada di awal file
 school_service = SchoolService()
 student_service = StudentService()
 
@@ -34,8 +41,14 @@ def list_students():
     return student_service.list_students()
 
 @router.get("/students/{student_id}", response_model=StudentResponse)
-def show_student(student_id: int):
-    return student_service.show_student(student_id)
+async def get_student(student_id: int):
+    logger.info(f"Mencoba mengambil siswa dengan ID: {student_id}")
+    student = student_service.show_student(student_id)
+    if student is None:
+        logger.warning(f"Siswa dengan ID {student_id} tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
+    logger.info(f"Siswa ditemukan: {student}")
+    return student
 
 @router.post("/students/", response_model=StudentResponse)
 def create_student(student: StudentCreate):
@@ -50,6 +63,21 @@ def delete_student(student_id: int):
     student_service.delete_student(student_id)
     return {"detail": "Student deleted"}
 
-@router.get("/students/{multiply}/{student_id}" ,response_model=StudentResponse)
-def getMultiply(student_id: int ,multiply:int):
-    return student_service.getMultiply(student_id,multiply)
+@router.get("/multiply/{multiply}")
+def getMultiply(multiply:int):
+    return student_service.getMultiply(multiply)
+@router.get("/debug/students")
+async def debug_students():
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM students")
+            results = cursor.fetchall()
+            return {"students": results}
+        except Error as e:
+            return {"error": str(e)}
+        finally:
+            cursor.close()
+            connection.close()
+    return {"error": "Tidak dapat membuat koneksi database"}
