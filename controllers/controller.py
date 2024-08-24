@@ -1,15 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from typing import List
-from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentUpdate, StudentResponse
+from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentUpdate, StudentResponse,SchoolWithStudent
 from services.service import SchoolService, StudentService
-from models.models import get_db_connection
+from models.models import get_db_connection,add_school,add_student
 import logging
 from mysql.connector import Error
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-router = APIRouter()  # Pastikan baris ini ada di awal file
+router = APIRouter()  
 school_service = SchoolService()
 student_service = StudentService()
 
@@ -40,19 +40,129 @@ def delete_school(school_id: int):
 def list_students():
     return student_service.list_students()
 
-@router.get("/students/{student_id}", response_model=StudentResponse)
-async def get_student(student_id: int):
-    logger.info(f"Mencoba mengambil siswa dengan ID: {student_id}")
-    student = student_service.show_student(student_id)
-    if student is None:
-        logger.warning(f"Siswa dengan ID {student_id} tidak ditemukan")
-        raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
-    logger.info(f"Siswa ditemukan: {student}")
-    return student
+@router.get("/schools/{school_id}/students", response_model=SchoolWithStudent)
+def read_school_with_all_students(school_id: int):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor(dictionary=True)
+
+            school_query = "SELECT id, name FROM schools WHERE id = %s"
+            cursor.execute(school_query, (school_id,))
+            school = cursor.fetchone()
+
+            if school is None:
+                raise HTTPException(status_code=404, detail="Sekolah tidak ditemukan")
+
+            students_query = "SELECT id, name, school_id FROM students WHERE school_id = %s"
+            cursor.execute(students_query, (school_id,))
+            students = cursor.fetchall()
+
+            student_responses = [StudentResponse(id=student['id'], name=student['name'], school_id=student['school_id']) for student in students]
+
+            result = SchoolWithStudent(
+                id=school['id'],
+                name=school['name'],
+                students=student_responses
+            )
+
+            return result
+        except Error as e:
+            logger.error(f"Error saat mengambil data sekolah dan siswa: {e}")
+            raise HTTPException(status_code=500, detail="Terjadi kesalahan internal server")
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        raise HTTPException(status_code=500, detail="Tidak dapat membuat koneksi database")
+
+
+@router.get("/schools/{school_id}/students/{student_id}", response_model=SchoolWithStudent)
+def read_school_with_student(school_id: int, student_id: int):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor(dictionary=True)
+
+            school_query = "SELECT id, name FROM schools WHERE id = %s"
+            cursor.execute(school_query, (school_id,))
+            school = cursor.fetchone()
+
+            if school is None:
+                raise HTTPException(status_code=404, detail="Sekolah tidak ditemukan")
+
+            student_query = "SELECT id, name, school_id FROM students WHERE id = %s AND school_id = %s"
+            cursor.execute(student_query, (student_id, school_id))
+            student = cursor.fetchone()
+
+            if student is None:
+                raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
+
+            student_response = StudentResponse(id=student['id'], name=student['name'], school_id=student['school_id'])
+
+            result = SchoolWithStudent(
+                id=school['id'],
+                name=school['name'],
+                students=[student_response]
+            )
+
+            return result
+        except Error as e:
+            logger.error(f"Error saat mengambil data sekolah dan siswa: {e}")
+            raise HTTPException(status_code=500, detail="Terjadi kesalahan internal server")
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        raise HTTPException(status_code=500, detail="Tidak dapat membuat koneksi database")
+    
+@router.get("/schools/{school_id}/students/name/{student_name}", response_model=SchoolWithStudent)
+def read_school_with_student(school_id: int, student_name: str):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor(dictionary=True)
+
+            school_query = "SELECT id, name FROM schools WHERE id = %s"
+            cursor.execute(school_query, (school_id,))
+            school = cursor.fetchone()
+
+            if school is None:
+                raise HTTPException(status_code=404, detail="Sekolah tidak ditemukan")
+
+            student_query = "SELECT id, name, school_id FROM students WHERE name = %s AND school_id = %s"
+            cursor.execute(student_query, (student_name, school_id))
+            student = cursor.fetchone()
+
+            if student is None:
+                raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
+
+            student_response = StudentResponse(id=student['id'], name=student['name'], school_id=student['school_id'])
+
+            result = SchoolWithStudent(
+                id=school['id'],
+                name=school['name'],
+                students=[student_response]
+            )
+
+            return result
+        except Error as e:
+            logger.error(f"Error saat mengambil data sekolah dan siswa: {e}")
+            raise HTTPException(status_code=500, detail="Terjadi kesalahan internal server")
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        raise HTTPException(status_code=500, detail="Tidak dapat membuat koneksi database")
 
 @router.post("/students/", response_model=StudentResponse)
-def create_student(student: StudentCreate):
-    return student_service.create_student(student)
+async def create_student(student: StudentCreate):
+    new_student_id = add_student(student.name, student.school_id)
+    if new_student_id:
+        return StudentResponse(id=new_student_id, name=student.name, school_id=student.school_id)
+    else:
+        raise HTTPException(status_code=500, detail="Gagal menambahkan siswa")
+
 
 @router.put("/students/{student_id}", response_model=StudentResponse)
 def update_student(student_id: int, student: StudentUpdate):
@@ -66,18 +176,3 @@ def delete_student(student_id: int):
 @router.get("/multiply/{multiply}")
 def getMultiply(multiply:int):
     return student_service.getMultiply(multiply)
-@router.get("/debug/students")
-async def debug_students():
-    connection = get_db_connection()
-    if connection:
-        try:
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM students")
-            results = cursor.fetchall()
-            return {"students": results}
-        except Error as e:
-            return {"error": str(e)}
-        finally:
-            cursor.close()
-            connection.close()
-    return {"error": "Tidak dapat membuat koneksi database"}

@@ -7,9 +7,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 class Student:
-    def __init__(self, id: int, name: str):
+    def __init__(self, id: int, name: str, school_id: int):
         self.id = id
         self.name = name
+        self.school_id = school_id
 
 class School:
     def __init__(self, id: int, name: str):
@@ -35,8 +36,8 @@ def get_all_students():
     if connection:
         try:
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM students")
-            students = [Student(id=row[0], name=row[1]) for row in cursor.fetchall()]
+            cursor.execute("SELECT id, name, school_id FROM students")
+            students = [Student(id=row[0], name=row[1], school_id=row[2]) for row in cursor.fetchall()]
             return students
         finally:
             cursor.close()
@@ -56,26 +57,45 @@ def get_all_schools():
             connection.close()
     return []
 
-def create_tables():
+
+def add_student(name: str, school_id: int):
     connection = get_db_connection()
     if connection:
         try:
             cursor = connection.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS students (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL
-                )
-            """)
+            query = "INSERT INTO students (name, school_id) VALUES (%s, %s)"
+            values = (name, school_id)
+            cursor.execute(query, values)
             connection.commit()
-            print("Tabel 'students' berhasil dibuat atau sudah ada.")
+            logger.info(f"Siswa baru '{name}' berhasil ditambahkan ke database")
+            return cursor.lastrowid
         except Error as e:
-            print(f"Error membuat tabel: {e}")
+            logger.error(f"Error menambahkan siswa ke database: {e}")
+            return None
         finally:
             cursor.close()
             connection.close()
+    return None
 
-# Inisialisasi database sekolah dan siswa
-create_tables()
+def add_school(name: str):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor()
+            query = "INSERT INTO schools (name) VALUES (%s)"
+            values = (name,)
+            cursor.execute(query, values)
+            connection.commit()
+            logger.info(f"Sekolah baru '{name}' berhasil ditambahkan ke database")
+            return cursor.lastrowid
+        except Error as e:
+            logger.error(f"Error menambahkan sekolah ke database: {e}")
+            return None
+        finally:
+            cursor.close()
+            connection.close()
+    return None
+
+
 schools_db = get_all_schools()
 students_db = get_all_students()

@@ -2,7 +2,7 @@ from typing import List
 from models.models import School, Student, get_all_students, get_all_schools, get_db_connection
 from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentUpdate, StudentResponse
 from exceptions.custom_exceptions import CustomHTTPException
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST
+from starlette.status import HTTP_404_NOT_FOUND
 import logging
 from mysql.connector import Error
 
@@ -40,7 +40,6 @@ class StudentService:
                 if result:
                     logger.info(f"Data siswa ditemukan: {result}")
                     logger.info(f"Kunci dalam result: {result.keys()}")
-                    # Ubah 'ID' menjadi 'id'
                     result['id'] = result.pop('id')
                     return Student(**result)
                 logger.warning(f"Tidak ada data siswa dengan ID {student_id}")

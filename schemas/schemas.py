@@ -1,7 +1,10 @@
 from pydantic import BaseModel
+from typing import List
 
 class StudentBase(BaseModel):
+    
     name: str
+    school_id: int
 
 class StudentCreate(StudentBase):
     pass
@@ -11,11 +14,14 @@ class StudentUpdate(StudentBase):
 
 class StudentResponse(StudentBase):
     id: int
+    name: str
+    school_id: int
 
     class Config:
         orm_mode = True
 
 class SchoolBase(BaseModel):
+    
     name: str
 
 class SchoolCreate(SchoolBase):
@@ -29,3 +35,8 @@ class SchoolResponse(SchoolBase):
 
     class Config:
         orm_mode = True
+
+class SchoolWithStudent(BaseModel):
+    id: int
+    name: str
+    students: List[StudentResponse]
