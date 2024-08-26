@@ -20,6 +20,13 @@ class StudentResponse(StudentBase):
     class Config:
         orm_mode = True
 
+class StudentWithSchoolResponse(BaseModel):
+    id: int
+    name: str
+    school_id: int
+    school_name: str    
+
+
 class SchoolBase(BaseModel):
     
     name: str
@@ -40,3 +47,4 @@ class SchoolWithStudent(BaseModel):
     id: int
     name: str
     students: List[StudentResponse]
+
