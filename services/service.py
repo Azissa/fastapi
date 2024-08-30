@@ -1,10 +1,13 @@
 from typing import List
-from models.models import School, Student, get_all_students, get_all_schools, get_db_connection
-from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentUpdate, StudentResponse
+
+from fastapi import HTTPException
+from models.models import School, Student, get_all_students, get_all_schools, get_db_connection,get_student_by_id_from_db,add_student,add_school
+from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentRequest, StudentUpdate, StudentResponse,StudentWithSchoolResponse,StudentBase
 from exceptions.custom_exceptions import CustomHTTPException
 from starlette.status import HTTP_404_NOT_FOUND
 import logging
 from mysql.connector import Error
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -29,34 +32,22 @@ class StudentService:
             logger.error(f"Error saat mendapatkan siswa: {str(e)}")
             raise
 
-    def get_student_by_id(self, student_id: int) -> Student:
-        logger.info(f"Mencoba mendapatkan siswa dengan ID: {student_id}")
-        connection = get_db_connection()
-        if connection:
-            try:
-                cursor = connection.cursor(dictionary=True)
-                cursor.execute("SELECT * FROM students WHERE id = %s", (student_id,))
-                result = cursor.fetchone()
-                if result:
-                    logger.info(f"Data siswa ditemukan: {result}")
-                    logger.info(f"Kunci dalam result: {result.keys()}")
-                    result['id'] = result.pop('id')
-                    return Student(**result)
-                logger.warning(f"Tidak ada data siswa dengan ID {student_id}")
-            except Error as e:
-                logger.error(f"Error database saat mengambil data siswa: {str(e)}")
-            finally:
-                cursor.close()
-                connection.close()
+    def get_student_by_id(self,student_id: int) -> StudentWithSchoolResponse:
+        try:
+            student = get_student_by_id_from_db(student_id)
+            print(student)
+            if student is None:
+                raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
+            return student
+        except Exception as e:
+            logger.error(f"Error saat mendapatkan siswa: {str(e)}")
+        
+    def post_student(self, student: StudentRequest) -> StudentResponse:
+        new_student_id = add_student(student)
+        if new_student_id:
+            return StudentResponse(id=new_student_id ,name=student.name, school_id=student.school_id)
         else:
-            logger.error("Tidak dapat membuat koneksi database")
-        return None
-
-    def create_student(self, student: StudentCreate) -> StudentResponse:
-        new_id = max((s.id for s in self.students), default=0) + 1
-        new_student = Student(id=new_id, name=student.name)
-        self.students.append(new_student)
-        return StudentResponse.from_orm(new_student)
+            raise HTTPException(status_code=500, detail="Gagal menambahkan siswa")
 
     def update_student(self, student_id: int, student: StudentUpdate) -> StudentResponse:
         existing_student = self.show_student(student_id)
@@ -78,6 +69,9 @@ class SchoolService:
 
     def list_schools(self) -> List[SchoolResponse]:
         return [SchoolResponse.from_orm(school) for school in get_all_schools()]
+    
+    def find_school_by_id(self) -> List[SchoolResponse]:
+        return 
 
     def show_school(self, school_id: int) -> SchoolResponse:
         school = next((school for school in self.schools if school.id == school_id), None)
@@ -87,6 +81,13 @@ class SchoolService:
                 detail="School not found"
             )
         return SchoolResponse.from_orm(school)
+
+    def post_school(self, school: SchoolCreate) -> SchoolResponse:
+        new_school_id = add_school(school)
+        if new_school_id:
+            return SchoolResponse(id=new_school_id,name=school.name)
+        else:
+            raise HTTPException(status_code=500, detail="Gagal menambahkan sekolah")
 
     def create_school(self, school: SchoolCreate) -> SchoolResponse:
         new_id = max((s.id for s in self.schools), default=0) + 1
@@ -100,5 +101,7 @@ class SchoolService:
         return SchoolResponse.from_orm(existing_school)
 
     def delete_school(self, school_id: int) -> None:
+        school = self.show_school(school_id)
+        self.schools.remove(school)
         school = self.show_school(school_id)
         self.schools.remove(school)

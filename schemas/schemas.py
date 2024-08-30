@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import List
 
 class StudentBase(BaseModel):
-    
     name: str
     school_id: int
 
@@ -12,10 +11,11 @@ class StudentCreate(StudentBase):
 class StudentUpdate(StudentBase):
     pass
 
+class StudentRequest(StudentBase):
+    pass
+
 class StudentResponse(StudentBase):
     id: int
-    name: str
-    school_id: int
 
     class Config:
         orm_mode = True
@@ -27,8 +27,8 @@ class StudentWithSchoolResponse(BaseModel):
     school_name: str    
 
 
-class SchoolBase(BaseModel):
-    
+class SchoolBase(BaseModel): 
+    id: int 
     name: str
 
 class SchoolCreate(SchoolBase):
@@ -39,6 +39,7 @@ class SchoolUpdate(SchoolBase):
 
 class SchoolResponse(SchoolBase):
     id: int
+    name: str
 
     class Config:
         orm_mode = True
