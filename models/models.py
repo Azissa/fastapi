@@ -81,6 +81,30 @@ def get_student_by_id_from_db(student_id: int):
         finally:     
             cursor.close()
             connection.close()
+            
+def get_student_by_name_from_db(student_name:str):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor(dictionary=True)
+            query = """
+            SELECT s.id as student_id, s.name as student_name, s.school_id,
+            sch.name as school_name
+            FROM students s
+            INNER JOIN schools sch ON s.school_id = sch.id
+            WHERE LOWER(s.name) LIKE LOWER(%s)
+            """
+            cursor.execute(query, (f"%{student_name}%",))
+            students = cursor.fetchall()
+            if not students:
+                raise HTTPException(status_code=404, detail="Tidak ada siswa yang ditemukan")
+            responses = Students.convert_to_json_students_name(students)
+            return responses
+        except Error as e:
+            logger.error(f"Error database saat mengambil data siswa: {str(e)}")
+        finally:
+            cursor.close()
+            connection.close()
 
 def add_student(student:StudentRequest):
     connection = get_db_connection()

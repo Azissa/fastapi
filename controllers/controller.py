@@ -161,63 +161,30 @@ def delete_school(school_id: int):
 
 
 # Student Endpoints
-@router.get("/students", response_model=List[StudentWithSchoolResponse])
+@router.get("/student/showall", response_model=List[StudentWithSchoolResponse])
 def list_students():
     return student_service.list_students()
 
-@router.get("/studentbyid/{student_id}", response_model=StudentWithSchoolResponse)
+@router.get("/student/show/byid/{student_id}", response_model=StudentWithSchoolResponse)
 def get_student_by_id(student_id: int):
     student = student_service.get_student_by_id(student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
     return student
 
-@router.get("/students/name/{student_name}", response_model=List[StudentWithSchoolResponse])
-def get_students_by_name_with_school(student_name: str):
-    connection = get_db_connection()
-    if connection:
-        try:
-            cursor = connection.cursor(dictionary=True)
-
-            query = """
-            SELECT s.id as student_id, s.name as student_name, s.school_id,
-            sch.name as school_name
-            FROM students s
-            INNER JOIN schools sch ON s.school_id = sch.id
-            WHERE LOWER(s.name) LIKE LOWER(%s)
-            """
-            cursor.execute(query, (f"%{student_name}%",))
-            results = cursor.fetchall()
-
-            if not results:
-                raise HTTPException(status_code=404, detail="Tidak ada siswa yang ditemukan")
-
-            responses = [
-                StudentWithSchoolResponse(
-                    id=result['student_id'],
-                    name=result['student_name'],
-                    school_id=result['school_id'],
-                    school_name=result['school_name']
-                ) for result in results
-            ]
-
-            return responses
-        except Error as e:
-            logger.error(f"Error saat mengambil data siswa dan sekolah: {e}")
-            raise HTTPException(status_code=500, detail="Terjadi kesalahan internal server")
-        finally:
-            cursor.close()
-            connection.close()
-    else:
-        raise HTTPException(status_code=500, detail="Tidak dapat membuat koneksi database")
-    
-    
+@router.get("/student/show/byname/{student_name}", response_model=List[StudentWithSchoolResponse])
+def get_student_by_name(student_name: str):
+    students = student_service.get_student_by_name(student_name)
+    print(students)
+    if students is None:
+        raise HTTPException(status_code=404, detail="siswa tidak ditemukan")
+    return students
 
 @router.post("/student/add", response_model=StudentResponse)
 def post_student(student_request:StudentRequest):
     return student_service.post_student(student_request)
 
-@router.put("/students/{student_id}", response_model=StudentResponse)
+@router.put("/students/update/{student_id}", response_model=StudentResponse)
 def update_student(student_id: int, student: StudentUpdate):
     return student_service.update_student(student_id, student)
 
