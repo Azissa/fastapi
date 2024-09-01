@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import HTTPException
-from models.models import School, Student, get_all_students, get_all_schools, get_db_connection,get_student_by_id_from_db,add_student,add_school
+from models.models import School, Student, get_all_students, get_all_schools, get_db_connection,get_student_by_id_from_db,add_student,add_school, get_student_by_name_from_db
 from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentRequest, StudentUpdate, StudentResponse,StudentWithSchoolResponse,StudentBase
 from exceptions.custom_exceptions import CustomHTTPException
 from starlette.status import HTTP_404_NOT_FOUND
@@ -35,10 +35,19 @@ class StudentService:
     def get_student_by_id(self,student_id: int) -> StudentWithSchoolResponse:
         try:
             student = get_student_by_id_from_db(student_id)
-            print(student)
             if student is None:
                 raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
             return student
+        except Exception as e:
+            logger.error(f"Error saat mendapatkan siswa: {str(e)}")
+        
+    def get_student_by_name(self,student_name:str) -> StudentWithSchoolResponse:
+        try:
+            students = get_student_by_name_from_db(student_name)
+            print(students)
+            if students is None:
+                raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
+            return students
         except Exception as e:
             logger.error(f"Error saat mendapatkan siswa: {str(e)}")
         
