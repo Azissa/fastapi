@@ -29,7 +29,6 @@ class StudentWithSchoolResponse(BaseModel):
 
 
 class SchoolBase(BaseModel): 
-    id: int 
     name: str
 
 class SchoolCreate(SchoolBase):
@@ -38,9 +37,11 @@ class SchoolCreate(SchoolBase):
 class SchoolUpdate(SchoolBase):
     pass
 
+class SchoolRequest(SchoolBase):
+    pass
+
 class SchoolResponse(SchoolBase):
     id: int
-    name: str
 
     class Config:
         orm_mode = True
