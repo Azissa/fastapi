@@ -184,13 +184,15 @@ def get_student_by_name(student_name: str):
 def post_student(student_request:StudentRequest):
     return student_service.post_student(student_request)
 
-@router.put("/students/update/{student_id}", response_model=StudentResponse)
+@router.put("/student/update/{student_id}", response_model=StudentResponse)
+def update_student(student_id: int, student: StudentUpdate):
+    return student_service.put_student(student_id, student)
+
+@router.put("/student/{student_id}", response_model=StudentResponse)
 def update_student(student_id: int, student: StudentUpdate):
     return student_service.update_student(student_id, student)
 
-@router.delete("/students/{student_id}")
+@router.delete("/student/delete/{student_id}")
 def delete_student(student_id: int):
     student_service.delete_student(student_id)
     return {"detail": "Student deleted"}
-
-
