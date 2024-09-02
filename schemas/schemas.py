@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List,Optional
 
 class StudentBase(BaseModel):
     name: str
@@ -10,6 +10,7 @@ class StudentCreate(StudentBase):
 
 class StudentUpdate(StudentBase):
     pass
+    updated_rows: Optional[int] = None
 
 class StudentRequest(StudentBase):
     pass

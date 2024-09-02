@@ -3,7 +3,7 @@ import mysql.connector
 from mysql.connector import Error
 import logging
 from fastapi import HTTPException
-from schemas.schemas import StudentRequest, StudentWithSchoolResponse,StudentBase,SchoolBase
+from schemas.schemas import StudentRequest, StudentResponse, StudentWithSchoolResponse,StudentBase,SchoolBase
 from util.helper import Students,Schools
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -69,9 +69,8 @@ def get_student_by_id_from_db(student_id: int):
             INNER JOIN schools sch ON s.school_id = sch.id
             WHERE s.id = %s
             """
-            cursor.execute(query, (student_id,))
+            cursor.execute(query, (student_id))
             student = cursor.fetchone()
-            print(student_id)
             if student is None:
                 raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
             responses = Students.convert_to_json_students(student)
@@ -124,6 +123,22 @@ def add_student(student:StudentRequest):
             connection.close()
     return None
 
+def update_student(student:StudentRequest,student_id:int):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor()
+            query = "UPDATE students SET name = %s, school_id = %s WHERE id = %s"
+            values = (student.name,student.school_id,student_id)
+            cursor.execute(query,values)
+            connection.commit()
+            return cursor.rowcount
+        except Error as e:
+            logger.error(f"Error database saat mengambil data siswa: {str(e)}")
+        finally:
+            cursor.close()
+            connection.close()
+            
 students_db = get_all_students()
 
 
