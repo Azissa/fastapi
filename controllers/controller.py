@@ -1,11 +1,11 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body
 from typing import List
 from schemas.schemas import SchoolCreate, SchoolUpdate, SchoolResponse, StudentCreate, StudentRequest, StudentUpdate, StudentResponse,SchoolWithStudent,StudentWithSchoolResponse
 from services.service import SchoolService, StudentService
 from models.models import get_db_connection,add_school,add_student
 import logging
 from mysql.connector import Error
-from util.helper import Students
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -23,9 +23,9 @@ def getMultiply(multiply:int):
 def list_schools():
     return school_service.list_schools()
 
-@router.get("/schoolbyid/{school_id}", response_model=SchoolResponse)
+@router.get("/school/show/byid/{school_id}", response_model=SchoolResponse)
 def find_school_by_id(school_id:int):
-    return school_service.find_school_by_id(school_id)
+    return school_service.get_school_by_id(school_id)
 
 @router.get("/schools/{school_id}/students", response_model=SchoolWithStudent)
 def read_school_with_all_students(school_id: int):
@@ -149,9 +149,14 @@ def post_school(school:SchoolCreate):
 def create_school(school: SchoolCreate):
     return school_service.create_school(school)
 
-@router.put("/schools/{school_id}", response_model=SchoolResponse)
+@router.put("/schools/update/{school_id}", response_model=SchoolResponse)
 def update_school(school_id: int, school: SchoolUpdate):
-    return school_service.update_school(school_id, school)
+    return school_service.put_school(school_id, school)
+
+@router.delete("/schools/delete/{school_id}")
+def del_school(school_id: int):
+    school_service.del_school(school_id)
+    return {"detail": "School deleted"}
 
 @router.delete("/schools/{school_id}")
 def delete_school(school_id: int):
@@ -193,6 +198,13 @@ def update_student(student_id: int, student: StudentUpdate):
     return student_service.update_student(student_id, student)
 
 @router.delete("/student/delete/{student_id}")
+def del_student(student_id:int):
+    student_service.del_student(student_id)
+    return {"detail": "Student deleted"}
+
+@router.delete("/student/{student_id}")
 def delete_student(student_id: int):
     student_service.delete_student(student_id)
     return {"detail": "Student deleted"}
+
+

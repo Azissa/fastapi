@@ -33,19 +33,18 @@ class Students:
 
 
 class Schools: 
-  def convert_to_json_schools(schools):
-      if isinstance(schools, dict):
-          return SchoolResponse(
-          id=schools['id'],
-          name=schools['name']
+    def convert_to_json_schools(schools):
+        if isinstance(schools, dict):
+            return SchoolResponse(
+            id=schools['id'],
+            name=schools['name']
         )
-      
-      responses = [SchoolResponse(
+
+        responses = [SchoolResponse(
                 id=school[0],
                 name=school[1]
             )for school in schools ]   
-      return responses
+        return responses
     
-    
-    
-  
+
+

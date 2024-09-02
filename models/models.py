@@ -3,7 +3,7 @@ import mysql.connector
 from mysql.connector import Error
 import logging
 from fastapi import HTTPException
-from schemas.schemas import StudentRequest, StudentResponse, StudentWithSchoolResponse,StudentBase,SchoolBase
+from schemas.schemas import SchoolRequest, StudentRequest, StudentResponse, StudentWithSchoolResponse,StudentBase,SchoolBase
 from util.helper import Students,Schools
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -138,6 +138,23 @@ def update_student(student:StudentRequest,student_id:int):
         finally:
             cursor.close()
             connection.close()
+
+def delete_student(student_id: int):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor()
+            query = "DELETE FROM `students` WHERE id = %s"
+            values = (student_id, )
+            cursor.execute(query,values)
+            connection.commit()
+            return cursor.rowcount
+        except Error as e:
+            logger.error(f"Error database saat mengambil data siswa: {str(e)}")
+            return None
+        finally:
+            cursor.close()
+            connection.close()
             
 students_db = get_all_students()
 
@@ -161,12 +178,11 @@ def get_all_schools():
             connection.close()
     return []
 
-def get_school_by_id(school_id: int):
+def get_school_by_id_from_db(school_id: int):
     connection = get_db_connection()
     if connection:
         try:
             cursor = connection.cursor(dictionary=True)
-            
             school_query = "SELECT id, name FROM schools WHERE id = %s"
             cursor.execute(school_query, (school_id,))
             school = cursor.fetchone()
@@ -200,5 +216,38 @@ def add_school(school:SchoolBase):
             connection.close()
     return None
 
-
+def update_school(school_id:int,school:SchoolRequest):
+    connection = get_db_connection()
+    if connection:
+        try:
+            cursor = connection.cursor()
+            query = "UPDATE schools SET name = %s WHERE id = %s"
+            values = (school.name,school_id)
+            cursor.execute(query,values)
+            connection.commit()
+            return cursor.rowcount
+        except Error as e:
+            logger.error(f"error saat mengupdate sekolah: {e}")
+        finally:
+            cursor.close()
+            connection.close()
+            
+def delete_school(school_id:int):
+    connection = get_db_connection()
+    if connection:
+        try :
+            cursor = connection.cursor()
+            query = "DELETE FROM `schools` WHERE id = %s"
+            values = (school_id, )
+            cursor.execute(query,values)
+            connection.commit()
+            return cursor.rowcount
+        except Error as e:
+            logger.error(f"Error database saat mengambil data sekolah: {str(e)}")
+            return None
+        finally:
+            cursor.close()
+            connection.close()
+            
+    
 schools_db = get_all_schools()
