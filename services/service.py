@@ -113,3 +113,7 @@ class SchoolService:
         self.schools.remove(school)
         school = self.show_school(school_id)
         self.schools.remove(school)
+
+
+
+
