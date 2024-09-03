@@ -50,4 +50,23 @@ class SchoolWithStudent(BaseModel):
     id: int
     name: str
     students: List[StudentResponse]
+    
+    
+    
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    
+class TokenData(BaseModel):
+    username: str | None = None
+    scopes: list[str] = []
+    
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    fullname: str | None = None
+    disabled: str | None = None
+    
+class UserInDB(User):
+    hashed_password: str
 
